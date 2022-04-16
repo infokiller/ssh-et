@@ -31,7 +31,7 @@ _print_usage_and_die() {
 }
 
 _check_deps() {
-  for cmd in telnet et ssh; do
+  for cmd in et ssh; do
     if ! _command_exists "${cmd}"; then
       _log_error "Missing required dependency: ${cmd}"
     fi
@@ -51,7 +51,7 @@ _check_args() {
 _find_ephemeral_port() {
   for port in {52200..52299} {62200..62299}; do
     # Check if port is open. See: https://stackoverflow.com/a/6943581
-    if ! telnet 127.0.0.1 "${port}" <<< $'\035' &> /dev/null; then
+    if ! { printf '' > /dev/tcp/127.0.0.1/"${port}"; } &> /dev/null; then
       echo "${port}"
       return 0
     fi
