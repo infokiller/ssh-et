@@ -31,14 +31,24 @@ _print_usage_and_die() {
 }
 
 _check_deps() {
+  local s=0
+  if ((BASH_VERSINFO[0] < 4)); then
+    _log_error 'Bash version must be at least 4.0'
+    s=1
+  fi
   for cmd in et ssh; do
     if ! _command_exists "${cmd}"; then
-      _log_error "Missing required dependency: ${cmd}"
+      _log_error "Missing dependency: ${cmd}"
+      s=1
     fi
   done
+  return $s
 }
 
 _check_args() {
+  if (($# < 1)); then
+    _print_usage_and_die
+  fi
   if [[ "${*: -1}" == -* ]]; then
     _log_error 'Last arg must be a remote, not an SSH option'
     _print_usage_and_die
