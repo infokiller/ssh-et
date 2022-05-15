@@ -93,7 +93,7 @@ main() {
   while ((!success && num_retries < MAX_RETRIES)); do
     if ! port="$(_find_ephemeral_port)"; then
       _log_error 'Could not find an ephemeral port'
-      return 2
+      return 1
     fi
     _log_info "Found open port: ${port}"
     local et_cmd=(et -t "${port}":22 -N "${remote}")
@@ -118,10 +118,11 @@ main() {
         success=1
         break
       fi
+      return 1
     done < "${et_fifo}"
     ((has_stdout)) || return 1
   done
-  ((success)) || return 3
+  ((success)) || return 1
   # We use the localhost loopback address for all remote hosts, so we don't want
   # to register it in the known hosts file or do any host auth against it (which
   # will lead to errors since SSH will think the host key changed). et does its
