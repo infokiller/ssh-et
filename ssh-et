@@ -89,7 +89,7 @@ main() {
   trap "rm -rf -- '${tmpdir}' &> /dev/null || true" EXIT ERR INT HUP TERM
   local et_fifo="${tmpdir}/et_fifo"
   mkfifo "${et_fifo}" || return $?
-  local port num_retries=0 success=0
+  local port num_retries=0 success=0 has_stdout=0
   while ((!success && num_retries < MAX_RETRIES)); do
     if ! port="$(_find_ephemeral_port)"; then
       _log_error 'Could not find an ephemeral port'
@@ -101,7 +101,9 @@ main() {
     "${et_cmd[@]}" > "${et_fifo}" &
     et_pid=$!
     success=0
+    has_stdout=0
     while IFS='' read -r line; do
+      has_stdout=1
       printf 'et: %s\n' "${line}"
       if [[ $line == *"Address already in use"* ]]; then
         wait "${et_pid}" || true
@@ -117,6 +119,7 @@ main() {
         break
       fi
     done < "${et_fifo}"
+    ((has_stdout)) || return 1
   done
   ((success)) || return 3
   # We use the localhost loopback address for all remote hosts, so we don't want
