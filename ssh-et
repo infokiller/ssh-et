@@ -123,13 +123,22 @@ main() {
     ((has_stdout)) || return 1
   done
   ((success)) || return 1
-  # We use the localhost loopback address for all remote hosts, so we don't want
-  # to register it in the known hosts file or do any host auth against it (which
-  # will lead to errors since SSH will think the host key changed). et does its
-  # own host auth so this is hopefully safe.
+  # We use the localhost loopback address for all remote hosts, but we still
+  # want to use the SSH options set for the remote in the client
+  # config. Therefore, we use the original remote hostname, but override two SSH
+  # options:
+  # - HostName: to connect to the loopback address
+  # - HostKeyAlias: to avoid warnings about the host key file
+  # NOTE: We must put the user provided SSH args first, since SSH gives priority
+  # to the *first* args it encounters.
+  # TODO: This doesn't work correctly when using the "%h" token in the ssh
+  # config, since it will be set to the loopback address instead of the remote
+  # name given on the command line. One possible workaround to explore is to
+  # create a temporary SSH config that includes the real config, and makes sure
+  # to only set HostName after all other config is passed.
   local ssh_cmd=(
-    ssh -q -o 'UserKnownHostsFile=/dev/null' -o 'StrictHostKeyChecking=no'
-    '127.0.0.1' -p "${port}" "${ssh_args[@]}"
+    ssh -p "${port}" "${ssh_args[@]}" -oHostName='127.0.0.1'
+    -oHostKeyAlias="${remote}" "${remote}"
   )
   _log_info "Running: ${ssh_cmd[*]}"
   "${ssh_cmd[@]}"
